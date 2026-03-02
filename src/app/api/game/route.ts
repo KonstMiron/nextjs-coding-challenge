@@ -7,13 +7,6 @@ import { sanitizePlayerName } from "@/lib/validation";
 
 const ROUND_DURATION = 60;
 
-let currentSession: {
-  id: string;
-  sentence: string;
-  startTime: Date;
-  endTime: Date;
-} | null = null;
-
 async function createNewSession() {
   const sentence = getRandomSentence();
   const startTime = new Date();
@@ -28,37 +21,30 @@ async function createNewSession() {
     },
   });
 
-  currentSession = {
-    id: session.id,
-    sentence: session.sentence,
-    startTime: session.startTime,
-    endTime: session.endTime,
-  };
-
-  setTimeout(async () => {
-    await createNewSession();
-    const newGameState = await getGameState();
-    await pusherServer.trigger("typing-game", "new-round", newGameState);
-  }, ROUND_DURATION * 1000);
-
   return session;
 }
 
 async function getCurrentSession() {
-  if (!currentSession || new Date() > currentSession.endTime) {
-    const session = await createNewSession();
-    return session;
+  // Find the most recent session
+  const latestSession = await prisma.gameSession.findFirst({
+    orderBy: { startTime: 'desc' },
+  });
+
+  // If no session exists or current session has ended, create a new one
+  if (!latestSession || new Date() > latestSession.endTime) {
+    const newSession = await createNewSession();
+    
+    // Notify all clients about new round
+    const gameState = await getGameStateForSession(newSession);
+    await pusherServer.trigger("typing-game", "new-round", gameState);
+    
+    return newSession;
   }
 
-  return prisma.gameSession.findUnique({
-    where: { id: currentSession.id },
-  });
+  return latestSession;
 }
 
-async function getGameState() {
-  const session = await getCurrentSession();
-  if (!session) throw new Error("No active session");
-
+async function getGameStateForSession(session: any) {
   const playerSessions = await prisma.playerSession.findMany({
     where: { sessionId: session.id },
     include: { player: true },
@@ -90,6 +76,13 @@ async function getGameState() {
     timeRemaining,
     players,
   };
+}
+
+async function getGameState() {
+  const session = await getCurrentSession();
+  if (!session) throw new Error("No active session");
+  
+  return await getGameStateForSession(session);
 }
 
 export async function GET() {

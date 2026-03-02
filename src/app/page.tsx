@@ -149,7 +149,7 @@ export default function GamePage() {
   );
 
   const handleNewRound = useCallback(async () => {
-    if (playerId && gameState?.sessionId) {
+    if (playerId && gameState?.sessionId && playerName) {
       try {
         await fetch("/api/round-complete", {
           method: "POST",
@@ -159,11 +159,18 @@ export default function GamePage() {
             sessionId: gameState.sessionId,
           }),
         });
+
+        // Create new round automatically
+        await fetch("/api/game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerName }),
+        });
       } catch (err) {
         console.error("Failed to complete round:", err);
       }
     }
-  }, [playerId, gameState?.sessionId]);
+  }, [playerId, gameState?.sessionId, playerName]);
 
   if (!playerId || !playerName) {
     return (
