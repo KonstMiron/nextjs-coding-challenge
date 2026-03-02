@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  sessions PlayerSession[]
+}
+
+model GameSession {
+  id        String   @id @default(cuid())
+  sentence  String
+  startTime DateTime
+  endTime   DateTime
+  duration  Int
+  createdAt DateTime @default(now())
+  
+  players PlayerSession[]
+}
+
+model PlayerSession {
+  id              String      @id @default(cuid())
+  playerId        String
+  sessionId       String
+  currentProgress String      @default("")
+  wpm             Float       @default(0)
+  accuracy        Float       @default(0)
+  isComplete      Boolean     @default(false)
+  completedAt     DateTime?
+  keystrokesTotal Int         @default(0)
+  keystrokesCorrect Int       @default(0)
+  
+  player  Player      @relation(fields: [playerId], references: [id])
+  session GameSession @relation(fields: [sessionId], references: [id])
+  
+  @@unique([playerId, sessionId])
+}

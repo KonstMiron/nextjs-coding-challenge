@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "prisma generate && next build",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NEXT_PUBLIC_PUSHER_KEY": "@pusher_key",
+    "NEXT_PUBLIC_PUSHER_CLUSTER": "@pusher_cluster",
+    "PUSHER_APP_ID": "@pusher_app_id",
+    "PUSHER_SECRET": "@pusher_secret"
+  }
+}
