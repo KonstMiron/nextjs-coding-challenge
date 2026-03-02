@@ -35,8 +35,13 @@ async function getCurrentSession() {
     const newSession = await createNewSession();
     
     // Notify all clients about new round
-    const gameState = await getGameStateForSession(newSession);
-    await pusherServer.trigger("typing-game", "new-round", gameState);
+    try {
+      const gameState = await getGameStateForSession(newSession);
+      await pusherServer.trigger("typing-game", "new-round", gameState);
+    } catch (error) {
+      console.error("Failed to send Pusher new-round event:", error);
+      // Continue anyway, session is created
+    }
     
     return newSession;
   }
